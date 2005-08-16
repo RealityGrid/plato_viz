@@ -44,8 +44,13 @@
 // plato includes
 #include "main.h"
 #include "PlatoDataReader.h"
+#include "PlatoIsoPipeline.h"
 #include "PlatoRenderWindow.h"
 #include "PlatoXYZPipeline.h"
+
+// global variables...
+char* rhoFilename = NULL;
+char* xyzFilename = NULL;
 
 int main(int argc, char** argv) {
 
@@ -56,12 +61,13 @@ int main(int argc, char** argv) {
 
   if(xyzFilename) {
     PlatoXYZPipeline* xyz = new PlatoXYZPipeline(xyzFilename);
-    prw->addActor(xyz->getAtomsActor());
-    prw->addActor(xyz->getBondsActor());
+    prw->addActors(xyz->getActors());
   }
 
   if(rhoFilename) {
     PlatoDataReader* pdr = new PlatoDataReader(rhoFilename);
+    PlatoIsoPipeline* pip = new PlatoIsoPipeline(pdr);
+    prw->addActors(pip->getActors());
   }
 
   vtkMultiThreader* thread = vtkMultiThreader::New();
@@ -70,6 +76,7 @@ int main(int argc, char** argv) {
 
   prw->start();
   
+  return 0;
 }
 
 void* test(void* userData) {
@@ -89,7 +96,7 @@ void parseOptions(int argc, char** argv) {
   for(int i = 1; i < argc; i++) {
 
     if(!strcmp("-h", argv[i]) || !strcmp("-help", argv[i])) {
-      usage(argv[0]);
+      usage();
       exit(0);
     }
 
@@ -101,7 +108,7 @@ void parseOptions(int argc, char** argv) {
     }
 
     if(!strcmp("-v", argv[i]) || !strcmp("--version", argv[i])) {
-      std::cout << "Plato Visualisation System 0.01pre\n";
+      std::cout << "Plato Visualisation System " << PVS_VERSION << std::endl;
       std::cout << "Robert Haines for RealityGrid.\n";
       std::cout << "Copyright (C) 2005  University of Manchester, ";
       std::cout << "United Kingdom,\nall rights reserved.\n";
@@ -118,13 +125,13 @@ void parseOptions(int argc, char** argv) {
 
   // check that all required options are present...
   if(!(rhoFile || xyzFile)) {
-    std::cerr << "No rho or xyz file.\n";
+    usage();
     exit(1);
   }
 }
 
-void usage(char* progName) {
-  std::cout << "Usage: " << progName << "  [options]\nOptions:\n";
+void usage() {
+  std::cout << "Usage: " << BIN_NAME << "  [options]\nOptions:\n";
   std::cout << "  -h, --help\t\tPrint this message and exit.\n";
   std::cout << "  -r, --rho\t\tInput rho file for viewing.\n";
   std::cout << "  -x, --xyz\t\tInput xyz file for viewing.\n";

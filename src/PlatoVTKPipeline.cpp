@@ -30,53 +30,57 @@
   Author........: Robert Haines
 ---------------------------------------------------------------------------*/
 
-#ifndef __PLATOISOPIPELINE_H__
+// system includes
 
-// plato includes...
+
+// vtk includes
+#include "vtkActorCollection.h"
+#include "vtkLookupTable.h"
+
+// plato includes
 #include "PlatoVTKPipeline.h"
 
-// vtk forward references...
-class vtkActor;
-class vtkClipPolyData;
-class vtkLookupTable;
-class vtkMarchingContourFilter;
-class vtkPlane;
-class vtkPointSet;
-class vtkPolyDataMapper;
-class vtkPolyDataNormals;
-class vtkProperty;
+PlatoVTKPipeline::PlatoVTKPipeline() {
+  // set up internal colour table...
+  colourTable = vtkLookupTable::New();
+  colourTable->SetHueRange(0.0, 1.0);
+  colourTable->SetRampToLinear();
+  colourTable->Build();
+  internalColourTable = true;
 
-// plato forward references...
-class PlatoDataReader;
+  init();
+}
 
-class PlatoIsoPipeline : public PlatoVTKPipeline {
+PlatoVTKPipeline::PlatoVTKPipeline(vtkLookupTable* clut) {
+  colourTable = clut;
+  internalColourTable = false;
 
- private:
-  double* isoValues;
-  bool* isoVisible;
-  double cutPlaneCentre[3];
+  init();
+}
 
-  vtkProperty* actorProperties;
-  vtkPlane* cutPlane;
-  vtkMarchingContourFilter* isoSurface;
-  vtkPolyDataNormals* isoNormals;
-  vtkClipPolyData* isoCutter;
-  vtkPolyDataMapper* isoMapper;
-  vtkActor* isoActor;
+PlatoVTKPipeline::~PlatoVTKPipeline() {
+  actors->Delete();
+}
 
-  PlatoDataReader* data;
+void PlatoVTKPipeline::init() {
+  actors = vtkActorCollection::New();
+}
 
- private:
-  void init();
-  void buildPipeline();
+vtkActorCollection* PlatoVTKPipeline::getActors() {
+  return actors;
+}
 
- public:
-  PlatoIsoPipeline(PlatoDataReader*);
-  PlatoIsoPipeline(PlatoDataReader*, vtkLookupTable*);
-  ~PlatoIsoPipeline();
-  void setIsoVisible(int, bool);
-  bool isIsoVisible(int);
-};
+void PlatoVTKPipeline::setColourTable(vtkLookupTable* clut) {
+  // if using an internal colour table, need to delete it first...
+  if(internalColourTable)
+    colourTable->Delete();
 
-#define __PLATOISOPIPELINE_H__
-#endif // __PLATOISOPIPELINE_H__
+  colourTable = clut;
+
+  // definitely not using internal colour table now...
+  internalColourTable = false;
+}
+
+vtkLookupTable* PlatoVTKPipeline::getColourTable() {
+  return colourTable;
+}

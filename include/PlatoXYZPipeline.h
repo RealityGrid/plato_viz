@@ -32,7 +32,10 @@
 
 #ifndef __PLATOXYZPIPELINE_H__
 
-// vtk forward references
+// plato includes...
+#include "PlatoVTKPipeline.h"
+
+// vtk forward references...
 class vtkXYZMolReader;
 class vtkSphereSource;
 class vtkGlyph3D;
@@ -41,13 +44,15 @@ class vtkPolyDataMapper;
 class vtkProperty;
 class vtkLODActor;
 
-class PlatoXYZPipeline {
+class PlatoXYZPipeline : public PlatoVTKPipeline {
 
  private:
   char* xyzFilename;
   int drawResolution;
   float sphereScale;
   int numAtoms;
+  bool moleculeVisible;
+  bool bondsVisible;
 
   vtkXYZMolReader* xyzReader;
   vtkSphereSource* sphere;
@@ -60,14 +65,18 @@ class PlatoXYZPipeline {
   vtkLODActor* bondsActor;
 
  private:
-  void createPipeline();
+  void init();
+  void buildPipeline();
 
  public:
   PlatoXYZPipeline(char*);
   ~PlatoXYZPipeline();
   vtkActor* getAtomsActor();
   vtkActor* getBondsActor();
-
+  void setMoleculeVisible(bool);
+  void setBondsVisible(bool);
+  bool isMoleculeVisible();
+  bool isBondsVisible();
 };
 
 #define __PLATOXYZPIPELINE_H__

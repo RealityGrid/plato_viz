@@ -35,6 +35,7 @@
 
 // vtk includes
 #include "vtkActor.h"
+#include "vtkActorCollection.h"
 #include "vtkRenderer.h"
 #include "vtkRenderWindow.h"
 #include "vtkRenderWindowInteractor.h"
@@ -71,6 +72,26 @@ PlatoRenderWindow::~PlatoRenderWindow() {
 
 void PlatoRenderWindow::addActor(vtkActor* actor) {
   renderer->AddActor(actor);
+}
+
+void PlatoRenderWindow::addActors(vtkActorCollection* collection) {
+  vtkActor* tmpActor;
+  for(int i = 0; i < collection->GetNumberOfItems(); i++) {
+    tmpActor = (vtkActor*) collection->GetItemAsObject(i);
+    renderer->AddActor(tmpActor);
+  }
+}
+
+vtkActorCollection* PlatoRenderWindow::getActors() {
+  return renderer->GetActors();
+}
+
+void PlatoRenderWindow::removeActor(vtkActor* actor) {
+  renderer->RemoveActor(actor);
+}
+
+void PlatoRenderWindow::removeAllActors() {
+  renderer->GetActors()->RemoveAllItems();
 }
 
 vtkRenderWindowInteractor* PlatoRenderWindow::getInteractor() {

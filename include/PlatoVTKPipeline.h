@@ -30,53 +30,33 @@
   Author........: Robert Haines
 ---------------------------------------------------------------------------*/
 
-#ifndef __PLATOISOPIPELINE_H__
-
-// plato includes...
-#include "PlatoVTKPipeline.h"
+#ifndef __PLATOVTKPIPELINE_H__
 
 // vtk forward references...
-class vtkActor;
-class vtkClipPolyData;
+class vtkActorCollection;
 class vtkLookupTable;
-class vtkMarchingContourFilter;
-class vtkPlane;
-class vtkPointSet;
-class vtkPolyDataMapper;
-class vtkPolyDataNormals;
-class vtkProperty;
 
-// plato forward references...
-class PlatoDataReader;
-
-class PlatoIsoPipeline : public PlatoVTKPipeline {
+class PlatoVTKPipeline {
 
  private:
-  double* isoValues;
-  bool* isoVisible;
-  double cutPlaneCentre[3];
+  bool internalColourTable;
 
-  vtkProperty* actorProperties;
-  vtkPlane* cutPlane;
-  vtkMarchingContourFilter* isoSurface;
-  vtkPolyDataNormals* isoNormals;
-  vtkClipPolyData* isoCutter;
-  vtkPolyDataMapper* isoMapper;
-  vtkActor* isoActor;
-
-  PlatoDataReader* data;
+ protected:
+  vtkLookupTable* colourTable;
+  vtkActorCollection* actors;
 
  private:
-  void init();
-  void buildPipeline();
+  virtual void init();
+  virtual void buildPipeline() = 0;
 
  public:
-  PlatoIsoPipeline(PlatoDataReader*);
-  PlatoIsoPipeline(PlatoDataReader*, vtkLookupTable*);
-  ~PlatoIsoPipeline();
-  void setIsoVisible(int, bool);
-  bool isIsoVisible(int);
+  PlatoVTKPipeline();
+  PlatoVTKPipeline(vtkLookupTable*);
+  ~PlatoVTKPipeline();
+  vtkActorCollection* getActors();
+  void setColourTable(vtkLookupTable*);
+  vtkLookupTable* getColourTable();
 };
 
-#define __PLATOISOPIPELINE_H__
-#endif // __PLATOISOPIPELINE_H__
+#define __PLATOVTKPIPELINE_H__
+#endif // __PLATOVTKPIPELINE_H__

@@ -61,6 +61,7 @@ class PlatoDataReader {
  public:
   PlatoDataReader(char*);
   ~PlatoDataReader();
+  vtkPointSet* getData();
   int* getDataDimensions();
   double* getDataRange();
   double* getDataCentre();

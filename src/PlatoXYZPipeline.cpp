@@ -31,6 +31,7 @@
 ---------------------------------------------------------------------------*/
 
 // vtk includes
+#include "vtkActorCollection.h"
 #include "vtkGlyph3D.h"
 #include "vtkLODActor.h"
 #include "vtkPolyDataMapper.h"
@@ -42,26 +43,24 @@
 //plato includes
 #include "PlatoXYZPipeline.h"
 
-PlatoXYZPipeline::PlatoXYZPipeline(char* filename) {
+PlatoXYZPipeline::PlatoXYZPipeline(char* filename) : PlatoVTKPipeline() {
   xyzFilename = filename;
   drawResolution = 12;
   sphereScale = 0.5f;
   numAtoms = 0;
 
-  xyzReader = vtkXYZMolReader::New();
-  sphere = vtkSphereSource::New();
-  atoms = vtkGlyph3D::New();
-  bonds = vtkTubeFilter::New();
-  atomsMapper = vtkPolyDataMapper::New();
-  bondsMapper = vtkPolyDataMapper::New();
-  actorProperties = vtkProperty::New();
-  atomsActor = vtkLODActor::New();
-  bondsActor = vtkLODActor::New();
+  moleculeVisible = true;
+  bondsVisible = true;
 
-  createPipeline();
+  init();
+  buildPipeline();
 }
 
 PlatoXYZPipeline::~PlatoXYZPipeline() {
+  // remove actor from collection...
+  actors->RemoveAllItems();
+
+  // delete all vtk objects...
   xyzReader->Delete();
   sphere->Delete();
   atoms->Delete();
@@ -73,8 +72,25 @@ PlatoXYZPipeline::~PlatoXYZPipeline() {
   bondsActor->Delete();
 }
 
-void PlatoXYZPipeline::createPipeline() {
-  // set up actor properties
+void PlatoXYZPipeline::init() {
+  // allocate memory for all the vtk objects...
+  xyzReader = vtkXYZMolReader::New();
+  sphere = vtkSphereSource::New();
+  atoms = vtkGlyph3D::New();
+  bonds = vtkTubeFilter::New();
+  atomsMapper = vtkPolyDataMapper::New();
+  bondsMapper = vtkPolyDataMapper::New();
+  actorProperties = vtkProperty::New();
+  atomsActor = vtkLODActor::New();
+  bondsActor = vtkLODActor::New();
+
+  // put the actors into the collection...
+  actors->AddItem(atomsActor);
+  actors->AddItem(bondsActor);
+}
+
+void PlatoXYZPipeline::buildPipeline() {
+  // set up actor properties...
   actorProperties->SetRepresentationToSurface();
   actorProperties->SetInterpolationToGouraud();
   actorProperties->SetAmbient(0.15);
@@ -84,11 +100,11 @@ void PlatoXYZPipeline::createPipeline() {
   actorProperties->SetSpecularColor(1.0, 1.0, 1.0);
   actorProperties->SetColor(1.0, 1.0, 1.0);
 
-  // load model
+  // load model...
   xyzReader->SetFileName(xyzFilename);
   numAtoms = xyzReader->GetNumberOfAtoms();
 
-  // create the atom glyph and the glyph itself
+  // create the atom glyph and the glyph itself...
   sphere->SetThetaResolution(drawResolution);
   sphere->SetPhiResolution(drawResolution);
   atoms->SetInput(xyzReader->GetOutput());
@@ -98,14 +114,14 @@ void PlatoXYZPipeline::createPipeline() {
   atoms->SetScaleFactor(sphereScale);
   atoms->SetSource(sphere->GetOutput());
 
-  // colour the atoms
+  // colour the atoms...
   atomsMapper->SetInput(atoms->GetOutput());
   atomsMapper->SetImmediateModeRendering(1);
   atomsMapper->UseLookupTableScalarRangeOff();
   atomsMapper->SetScalarVisibility(1);
   atomsMapper->SetScalarModeToDefault();
 
-  // put the atoms into an actor
+  // put the atoms into an actor...
   atomsActor->SetMapper(atomsMapper);
   atomsActor->SetProperty(actorProperties);
   if(numAtoms < 1000)
@@ -113,7 +129,7 @@ void PlatoXYZPipeline::createPipeline() {
   else
     atomsActor->SetNumberOfCloudPoints(1000);
 
-  // create the tube glyph for the bonds
+  // create the tube glyph for the bonds...
   bonds->SetInput(xyzReader->GetOutput());
   bonds->SetNumberOfSides(drawResolution);
   bonds->SetCapping(0);
@@ -121,14 +137,14 @@ void PlatoXYZPipeline::createPipeline() {
   bonds->SetVaryRadius(0);
   bonds->SetRadiusFactor(10);
 
-  // colour the bonds
+  // colour the bonds...
   bondsMapper->SetInput(bonds->GetOutput());
   bondsMapper->SetImmediateModeRendering(1);
   bondsMapper->UseLookupTableScalarRangeOff();
   bondsMapper->SetScalarVisibility(1);
   bondsMapper->SetScalarModeToDefault();
 
-  // put the bonds into an actor
+  // put the bonds into an actor...
   bondsActor->SetMapper(bondsMapper);
   bondsActor->SetProperty(actorProperties);
 }
@@ -139,4 +155,40 @@ vtkActor* PlatoXYZPipeline::getAtomsActor() {
 
 vtkActor* PlatoXYZPipeline::getBondsActor() {
   return bondsActor;
+}
+
+void PlatoXYZPipeline::setMoleculeVisible(bool toggle) {
+  // toggle off the atoms...
+  moleculeVisible = toggle;
+  toggle ? atomsActor->SetVisibility(1) : atomsActor->SetVisibility(0);
+
+  // if needs be, toggle off the bonds...
+  if(bondsVisible) {
+    if(toggle) 
+      bondsActor->SetVisibility(1);
+    else
+      bondsActor->SetVisibility(0);
+  }
+}
+
+void PlatoXYZPipeline::setBondsVisible(bool toggle) {
+  // if we're not showing the molecule, the bonds don't count...
+  if(!moleculeVisible)
+    return;
+
+  // toggle the bonds...
+  bondsVisible = toggle;
+  toggle ? bondsActor->SetVisibility(1) : bondsActor->SetVisibility(0);
+}
+
+bool PlatoXYZPipeline::isMoleculeVisible() {
+  return moleculeVisible;
+}
+
+bool PlatoXYZPipeline::isBondsVisible() {
+  // if we're not showing the molecule, we're not showing the bonds...
+  if(!moleculeVisible)
+    return false;
+
+  return bondsVisible;
 }

@@ -30,16 +30,16 @@
   Author........: Robert Haines
 ---------------------------------------------------------------------------*/
 
-#ifndef __MAIN_H__
+#ifndef __PVS_MAIN_H__
 
-// global variables...
-char* rhoFilename = NULL;
-char* xyzFilename = NULL;
+// macro definitions...
+#define PVS_VERSION "0.01 pre"
+#define PVS_MAX_ISOS 4
 
 // prototypes...
 void parseOptions(int, char**);
-void usage(char*);
+void usage();
 void* test(void*);
 
-#define __MAIN_H__
-#endif // __MAIN_H__
+#define __PVS_MAIN_H__
+#endif // __PVS_MAIN_H__

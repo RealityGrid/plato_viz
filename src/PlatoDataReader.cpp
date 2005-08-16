@@ -191,6 +191,15 @@ void PlatoDataReader::buildPipeline() {
   dataSet->GetBounds(dataBounds);
 }
 
+vtkPointSet* PlatoDataReader::getData() {
+  if(uniformMesh) {
+    return dataSet;
+  }
+  else {
+    return delaunay->GetOutput();
+  }
+}
+
 int* PlatoDataReader::getDataDimensions() {
   return dataDims;
 }

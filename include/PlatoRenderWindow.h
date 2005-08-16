@@ -32,7 +32,9 @@
 
 #ifndef __PLATORENDERWINDOW_H__
 
-// vtk forward references
+// vtk forward references...
+class vtkActor;
+class vtkActorCollection;
 class vtkInteractorStyleTrackballCamera;
 class vtkRenderer;
 class vtkRenderWindow;
@@ -54,7 +56,10 @@ class PlatoRenderWindow {
   PlatoRenderWindow(const char*, int, int);
   ~PlatoRenderWindow();
   void addActor(vtkActor*);
+  void addActors(vtkActorCollection*);
+  vtkActorCollection* getActors();
   void removeActor(vtkActor*);
+  void removeAllActors();
   vtkRenderWindowInteractor* getInteractor();
   void start();
 };
