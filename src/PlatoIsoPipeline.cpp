@@ -149,6 +149,18 @@ void PlatoIsoPipeline::buildPipeline() {
   setIsoVisible(0, true);
 }
 
+void PlatoIsoPipeline::setIsoValue(int iso, double value) {
+  isoValues[iso] = value;
+  isoSurface->SetValue(iso, value);
+}
+
+double PlatoIsoPipeline::getIsoValue(int iso) {
+  if((iso < 0) || (iso >= PVS_MAX_ISOS))
+    return 0.0;
+
+  return isoValues[iso];
+}
+
 void PlatoIsoPipeline::setIsoVisible(int iso, bool toggle) {
   if((iso < 0) || (iso >= PVS_MAX_ISOS) || (isoVisible[iso] == toggle))
     return;

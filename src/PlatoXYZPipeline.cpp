@@ -33,7 +33,7 @@
 // vtk includes
 #include "vtkActorCollection.h"
 #include "vtkGlyph3D.h"
-#include "vtkLODActor.h"
+#include "vtkActor.h"
 #include "vtkPolyDataMapper.h"
 #include "vtkProperty.h"
 #include "vtkSphereSource.h"
@@ -81,8 +81,8 @@ void PlatoXYZPipeline::init() {
   atomsMapper = vtkPolyDataMapper::New();
   bondsMapper = vtkPolyDataMapper::New();
   actorProperties = vtkProperty::New();
-  atomsActor = vtkLODActor::New();
-  bondsActor = vtkLODActor::New();
+  atomsActor = vtkActor::New();
+  bondsActor = vtkActor::New();
 
   // put the actors into the collection...
   actors->AddItem(atomsActor);
@@ -124,10 +124,6 @@ void PlatoXYZPipeline::buildPipeline() {
   // put the atoms into an actor...
   atomsActor->SetMapper(atomsMapper);
   atomsActor->SetProperty(actorProperties);
-  if(numAtoms < 1000)
-    atomsActor->SetNumberOfCloudPoints(numAtoms);
-  else
-    atomsActor->SetNumberOfCloudPoints(1000);
 
   // create the tube glyph for the bonds...
   bonds->SetInput(xyzReader->GetOutput());
@@ -158,16 +154,13 @@ vtkActor* PlatoXYZPipeline::getBondsActor() {
 }
 
 void PlatoXYZPipeline::setMoleculeVisible(bool toggle) {
-  // toggle off the atoms...
+  // toggle the atoms...
   moleculeVisible = toggle;
   toggle ? atomsActor->SetVisibility(1) : atomsActor->SetVisibility(0);
 
-  // if needs be, toggle off the bonds...
+  // if needs be, toggle the bonds...
   if(bondsVisible) {
-    if(toggle) 
-      bondsActor->SetVisibility(1);
-    else
-      bondsActor->SetVisibility(0);
+    toggle ? bondsActor->SetVisibility(1) : bondsActor->SetVisibility(0);
   }
 }
 

@@ -35,10 +35,15 @@
 // vtk forward references...
 class vtkActor;
 class vtkActorCollection;
+class vtkCallbackCommand;
 class vtkInteractorStyleTrackballCamera;
+class vtkObject;
 class vtkRenderer;
 class vtkRenderWindow;
 class vtkRenderWindowInteractor;
+
+// plato forward references...
+class PlatoVTKPipeline;
 
 class PlatoRenderWindow {
   
@@ -47,21 +52,24 @@ class PlatoRenderWindow {
   int windowWidth;
   int windowHeight;
 
+  vtkCallbackCommand* callback;
   vtkRenderer* renderer;
   vtkRenderWindow* window;
   vtkRenderWindowInteractor* interactor;
   vtkInteractorStyleTrackballCamera* interactorStyle;
 
  public:
-  PlatoRenderWindow(const char*, int, int);
+  PlatoRenderWindow(const char*, int = 500, int = 500);
   ~PlatoRenderWindow();
   void addActor(vtkActor*);
   void addActors(vtkActorCollection*);
   vtkActorCollection* getActors();
   void removeActor(vtkActor*);
   void removeAllActors();
+  void addPipeline(PlatoVTKPipeline*);
   vtkRenderWindowInteractor* getInteractor();
   void start();
+  void exit();
 };
 
 #define __PLATORENDERWINDOW_H__

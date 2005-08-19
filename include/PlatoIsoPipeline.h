@@ -74,6 +74,8 @@ class PlatoIsoPipeline : public PlatoVTKPipeline {
   PlatoIsoPipeline(PlatoDataReader*);
   PlatoIsoPipeline(PlatoDataReader*, vtkLookupTable*);
   ~PlatoIsoPipeline();
+  void setIsoValue(int, double);
+  double getIsoValue(int);
   void setIsoVisible(int, bool);
   bool isIsoVisible(int);
 };

@@ -30,16 +30,30 @@
   Author........: Robert Haines
 ---------------------------------------------------------------------------*/
 
-#ifndef __PVS_MAIN_H__
+#ifndef __PLATOMAIN_H__
 
 // macro definitions...
 #define PVS_VERSION "0.01 pre"
 #define PVS_MAX_ISOS 4
 
+// Plato forward references...
+class PlatoDataReader;
+class PlatoRenderWindow;
+class PlatoVTKPipeline;
+
+// struct to pass data to the thread...
+struct threadData {
+  PlatoRenderWindow* window;
+  PlatoDataReader* dataReader;
+  PlatoVTKPipeline* xyzPipeline;
+  PlatoVTKPipeline* isoPipeline;
+};
+
 // prototypes...
 void parseOptions(int, char**);
+void renderCallback(vtkObject*, unsigned long, void*, void*);
+void* regLoop(void*);
 void usage();
-void* test(void*);
 
-#define __PVS_MAIN_H__
-#endif // __PVS_MAIN_H__
+#define __PLATOMAIN_H__
+#endif // __PLATOMAIN_H__

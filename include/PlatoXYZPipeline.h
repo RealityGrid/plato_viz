@@ -42,7 +42,7 @@ class vtkGlyph3D;
 class vtkTubeFilter;
 class vtkPolyDataMapper;
 class vtkProperty;
-class vtkLODActor;
+class vtkActor;
 
 class PlatoXYZPipeline : public PlatoVTKPipeline {
 
@@ -61,8 +61,8 @@ class PlatoXYZPipeline : public PlatoVTKPipeline {
   vtkPolyDataMapper* atomsMapper;
   vtkPolyDataMapper* bondsMapper;
   vtkProperty* actorProperties;
-  vtkLODActor* atomsActor;
-  vtkLODActor* bondsActor;
+  vtkActor* atomsActor;
+  vtkActor* bondsActor;
 
  private:
   void init();

@@ -36,15 +36,21 @@
 // vtk includes
 #include "vtkActor.h"
 #include "vtkActorCollection.h"
+#include "vtkCallbackCommand.h"
 #include "vtkRenderer.h"
 #include "vtkRenderWindow.h"
 #include "vtkRenderWindowInteractor.h"
 #include "vtkInteractorStyleTrackballCamera.h"
 
 //plato includes
+#include "main.h"
 #include "PlatoRenderWindow.h"
+#include "PlatoVTKPipeline.h"
 
 PlatoRenderWindow::PlatoRenderWindow(const char* name, int width, int height) {
+  callback = vtkCallbackCommand::New();
+  callback->SetCallback(renderCallback);
+
   windowName = const_cast<char*>(name);
   windowWidth = width;
   windowHeight = height;
@@ -61,12 +67,17 @@ PlatoRenderWindow::PlatoRenderWindow(const char* name, int width, int height) {
   interactor = vtkRenderWindowInteractor::New();
   interactor->SetRenderWindow(window);
   interactor->SetInteractorStyle(interactorStyle);
+  interactor->Initialize();
+  interactor->AddObserver(vtkCommand::TimerEvent, callback);
+  interactor->CreateTimer(VTKI_TIMER_FIRST);
 }
 
 PlatoRenderWindow::~PlatoRenderWindow() {
+  callback->Delete();
   renderer->Delete();
   window->Delete();
-  interactor->Delete();
+  if(interactor)
+    interactor->Delete();
   interactorStyle->Delete();
 }
 
@@ -94,11 +105,18 @@ void PlatoRenderWindow::removeAllActors() {
   renderer->GetActors()->RemoveAllItems();
 }
 
+void PlatoRenderWindow::addPipeline(PlatoVTKPipeline* pipe) {
+  addActors(pipe->getActors());
+}
+
 vtkRenderWindowInteractor* PlatoRenderWindow::getInteractor() {
   return interactor;
 }
 
 void PlatoRenderWindow::start() {
-  interactor->Initialize();
   interactor->Start();
+}
+
+void PlatoRenderWindow::exit() {
+  interactor->ExitCallback();
 }
