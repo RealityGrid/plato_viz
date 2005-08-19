@@ -41,7 +41,7 @@ VTK_INCLUDES=-I/opt/software/vtk/VTK -I/opt/software/vtk/VTK/Common -I/opt/softw
 VTK_LINK=-L/opt/software/vtk/VTK/bin -lvtkCommon -lvtkFiltering -lvtkGraphics -lvtkHybrid -lvtkImaging -lvtkIO -lvtkRendering -lvtkVolumeRendering -lvtkWidgets
 
 CXX=g++
-CPPFLAGS=-DBIN_NAME=\"${TARGET}\" -Iinclude ${REG_INCLUDES} ${VTK_INCLUDES}
+CPPFLAGS=-DPVS_BIN_NAME=\"${TARGET}\" -Iinclude ${REG_INCLUDES} ${VTK_INCLUDES}
 CXXFLAGS=-Wno-deprecated -O3
 LDFLAGS=${REG_LINK} ${VTK_LINK}
 
