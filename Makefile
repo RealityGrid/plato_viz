@@ -42,15 +42,17 @@ VTK_LINK=-L/opt/software/vtk/VTK/bin -lvtkCommon -lvtkFiltering -lvtkGraphics -l
 
 CXX=g++
 CPPFLAGS=-DPVS_BIN_NAME=\"${TARGET}\" -Iinclude ${REG_INCLUDES} ${VTK_INCLUDES}
-CXXFLAGS=-Wno-deprecated -O3
+CXXFLAGS=-Wno-deprecated -O3 -pipe
 LDFLAGS=${REG_LINK} ${VTK_LINK}
 
 OBJECTS=src/main.o \
 	src/PlatoDataReader.o \
 	src/PlatoIsoPipeline.o \
+	src/PlatoOrthoPipeline.o \
 	src/PlatoRenderWindow.o \
 	src/PlatoVTKPipeline.o \
-	src/PlatoXYZPipeline.o
+	src/PlatoXYZPipeline.o \
+	src/realitygrid.o
 
 # build the objects and link into the executable...
 
