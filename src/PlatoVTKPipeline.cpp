@@ -30,9 +30,6 @@
   Author........: Robert Haines
 ---------------------------------------------------------------------------*/
 
-// system includes
-
-
 // vtk includes
 #include "vtkActorCollection.h"
 #include "vtkLookupTable.h"
@@ -59,6 +56,9 @@ PlatoVTKPipeline::PlatoVTKPipeline(vtkLookupTable* clut) {
 }
 
 PlatoVTKPipeline::~PlatoVTKPipeline() {
+  if(internalColourTable)
+    colourTable->Delete();
+
   actors->Delete();
 }
 

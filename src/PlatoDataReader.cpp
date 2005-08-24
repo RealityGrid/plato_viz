@@ -79,7 +79,6 @@ PlatoDataReader::~PlatoDataReader() {
 }
 
 void PlatoDataReader::readRhoFile() {
-  //int meshDims[] = {0, 0, 0};
   int numPoints = 0;
   float tmpData[] = {0.0f, 0.0f, 0.0f, 0.0f};
   float cellVec[9];
