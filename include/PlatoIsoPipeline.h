@@ -54,7 +54,10 @@ class PlatoIsoPipeline : public PlatoVTKPipeline {
  private:
   double* isoValues;
   bool* isoVisible;
-  double cutPlaneCentre[3];
+  double* dataRange;
+  double* cutPlaneCentre;
+  double* cutPlaneNormals;
+  bool cutPlaneOn;
 
   vtkProperty* actorProperties;
   vtkPlane* cutPlane;
@@ -78,6 +81,8 @@ class PlatoIsoPipeline : public PlatoVTKPipeline {
   double getIsoValue(int);
   void setIsoVisible(int, bool);
   bool isIsoVisible(int);
+  void setIsoCutter(bool);
+  bool isIsoCutterOn();
 };
 
 #define __PLATOISOPIPELINE_H__

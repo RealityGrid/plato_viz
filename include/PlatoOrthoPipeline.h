@@ -51,6 +51,7 @@ class PlatoOrthoPipeline : public PlatoVTKPipeline {
   double* dataRange;
   double* orthoPlaneCentre;
   double* orthoPlaneNormals;
+  bool orthosliceOn;
 
   vtkCutter* orthoSlice;
   vtkPlane* orthoPlane;
@@ -67,6 +68,8 @@ class PlatoOrthoPipeline : public PlatoVTKPipeline {
   PlatoOrthoPipeline(PlatoDataReader*);
   PlatoOrthoPipeline(PlatoDataReader*, vtkLookupTable*);
   ~PlatoOrthoPipeline();
+  void setOrthoslice(bool);
+  bool isOrthosliceOn();
 };
 
 #define __PLATOORTHOPIPELINE_H__

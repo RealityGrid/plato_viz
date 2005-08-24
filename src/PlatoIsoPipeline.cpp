@@ -30,9 +30,6 @@
   Author........: Robert Haines
 ---------------------------------------------------------------------------*/
 
-// system includes...
-
-
 // vtk includes...
 #include "vtkActor.h"
 #include "vtkActorCollection.h"
@@ -71,6 +68,7 @@ PlatoIsoPipeline::PlatoIsoPipeline(PlatoDataReader* dr, vtkLookupTable* clut)
 PlatoIsoPipeline::~PlatoIsoPipeline() {
   delete[] isoValues;
   delete[] isoVisible;
+  delete[] cutPlaneNormals;
 
   // remove actor from collection...
   actors->RemoveAllItems();
@@ -86,9 +84,16 @@ PlatoIsoPipeline::~PlatoIsoPipeline() {
 }
 
 void PlatoIsoPipeline::init() {
-  double* dataRange = data->getDataRange();
+  dataRange = data->getDataRange();
+  cutPlaneCentre = data->getDataCentre();
   isoValues = new double[PVS_MAX_ISOS];
   isoVisible = new bool[PVS_MAX_ISOS];
+  cutPlaneNormals = new double[3];
+  cutPlaneNormals[0] = 0.0;
+  cutPlaneNormals[1] = 1.0;
+  cutPlaneNormals[2] = 0.0;
+
+  cutPlaneOn = false;
 
   // keep track of isosurface values and visibilities...
   for(int i = 0; i < PVS_MAX_ISOS; i++) {
@@ -111,8 +116,8 @@ void PlatoIsoPipeline::init() {
 
 void PlatoIsoPipeline::buildPipeline() {
   // set up the cut plane to cut the isosurfaces...
-  cutPlane->SetOrigin(data->getDataCentre());
-  cutPlane->SetNormal(0.0, 1.0, 0.0);
+  cutPlane->SetOrigin(cutPlaneCentre);
+  cutPlane->SetNormal(cutPlaneNormals);
 
   // set up actor properties...
   actorProperties->SetInterpolationToGouraud();
@@ -137,9 +142,8 @@ void PlatoIsoPipeline::buildPipeline() {
 
   // apply colour map...
   isoMapper->SetInput(isoNormals->GetOutput());
+  isoMapper->SetScalarRange(dataRange);
   isoMapper->SetLookupTable(colourTable);
-  isoMapper->UseLookupTableScalarRangeOn();
-  isoMapper->SetColorModeToMapScalars();
 
   // put it all into an actor and apply properties...
   isoActor->SetMapper(isoMapper);
@@ -150,8 +154,10 @@ void PlatoIsoPipeline::buildPipeline() {
 }
 
 void PlatoIsoPipeline::setIsoValue(int iso, double value) {
-  isoValues[iso] = value;
-  isoSurface->SetValue(iso, value);
+  if(isoVisible[iso]) {
+    isoValues[iso] = value;
+    isoSurface->SetValue(iso, value);
+  }
 }
 
 double PlatoIsoPipeline::getIsoValue(int iso) {
@@ -185,4 +191,17 @@ bool PlatoIsoPipeline::isIsoVisible(int iso) {
     return false;
 
   return isoVisible[iso];
+}
+
+void PlatoIsoPipeline::setIsoCutter(bool toggle) {
+  cutPlaneOn = toggle;
+
+  if(cutPlaneOn)
+    isoNormals->SetInput(isoCutter->GetOutput());
+  else
+    isoNormals->SetInput(isoSurface->GetOutput());
+}
+
+bool PlatoIsoPipeline::isIsoCutterOn() {
+  return cutPlaneOn;
 }

@@ -83,6 +83,8 @@ void PlatoOrthoPipeline::init() {
   orthoPlaneNormals[1] = 0.0;
   orthoPlaneNormals[2] = 1.0;
 
+  orthosliceOn = false;
+
   orthoPlane = vtkPlane::New();
   orthoSlice = vtkCutter::New();
   orthoMapper = vtkPolyDataMapper::New();
@@ -105,9 +107,18 @@ void PlatoOrthoPipeline::buildPipeline() {
   orthoMapper->SetInput(orthoSlice->GetOutput());
   orthoMapper->SetScalarRange(dataRange);
   orthoMapper->SetLookupTable(colourTable);
-  //orthoMapper->UseLookupTableScalarRangeOn();
-  //orthoMapper->SetColorModeToMapScalars();
 
-  // put it into an actor...
+  // put it into an actor and set it's state...
   orthoActor->SetMapper(orthoMapper);
+  setOrthoslice(orthosliceOn);
+}
+
+void PlatoOrthoPipeline::setOrthoslice(bool toggle) {
+  orthosliceOn = toggle;
+
+  orthosliceOn ? orthoActor->SetVisibility(1) : orthoActor->SetVisibility(0);
+}
+
+bool PlatoOrthoPipeline::isOrthosliceOn() {
+  return orthosliceOn;
 }
