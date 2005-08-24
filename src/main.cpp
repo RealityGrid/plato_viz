@@ -34,7 +34,6 @@
 #include <cstring>
 #include <iostream>
 #include <semaphore.h>
-#include <unistd.h>
 
 // vtk includes...
 #include "vtkCommand.h"
@@ -49,37 +48,45 @@
 #include "main.h"
 #include "PlatoDataReader.h"
 #include "PlatoIsoPipeline.h"
+#include "PlatoOrthoPipeline.h"
 #include "PlatoRenderWindow.h"
 #include "PlatoXYZPipeline.h"
+#include "realitygrid.h"
 
-// global variables...
-char* rhoFilename = NULL;
-char* xyzFilename = NULL;
+// program-wide variable definitions...
 volatile bool reRender = false;
 volatile bool regLoopDone = false;
-
-// threading stuff...
 vtkMutexLock* renderLock;
 vtkMutexLock* loopLock;
 sem_t regDone;
 
 int main(int argc, char** argv) {
+  optionsData options;
+  options.rhoFilename = NULL;
+  options.xyzFilename = NULL;
+  options.useCutplane = false;
+  options.useOrthoslice = false;
 
-  parseOptions(argc, argv);
+  parseOptions(argc, argv, &options);
 
   PlatoRenderWindow* prw = new PlatoRenderWindow("Plato Visualization System (pvs)");
   PlatoXYZPipeline* xyz;
-  if(xyzFilename) {
-    xyz = new PlatoXYZPipeline(xyzFilename);
+  if(options.xyzFilename) {
+    xyz = new PlatoXYZPipeline(options.xyzFilename);
     prw->addPipeline(xyz);
   }
 
   PlatoDataReader* pdr;
   PlatoIsoPipeline* pip;
-  if(rhoFilename) {
-    pdr = new PlatoDataReader(rhoFilename);
+  PlatoOrthoPipeline* pop;
+  if(options.rhoFilename) {
+    pdr = new PlatoDataReader(options.rhoFilename);
     pip = new PlatoIsoPipeline(pdr);
+    pip->setIsoCutter(options.useCutplane);
+    pop = new PlatoOrthoPipeline(pdr);
+    pop->setOrthoslice(options.useOrthoslice);
     prw->addPipeline(pip);
+    prw->addPipeline(pop);
   }
 
   // initialise thread stuff...
@@ -88,17 +95,13 @@ int main(int argc, char** argv) {
   sem_init(&regDone, 0, 0);
   vtkMultiThreader* thread = vtkMultiThreader::New();
 
-  // initialise ReG stuff...
-  Steering_enable(REG_TRUE);
-  int cmds[] = {REG_STR_STOP};
-  Steering_initialize(PVS_BIN_NAME, 1, cmds);
-
   // initialise and start the RealityGrid loop...
   threadData* td = new threadData;
   td->window = prw;
   td->dataReader = pdr;
   td->xyzPipeline = xyz;
   td->isoPipeline = pip;
+  td->orthoPipeline = pop;
   thread->SpawnThread(regLoop, td);
 
   // start the vtk interactor (this blocks the main thread)...
@@ -112,119 +115,20 @@ int main(int argc, char** argv) {
   // wait for it to finish...
   sem_wait(&regDone);
 
-  std::cout << "Ready to cleanup...\n";
+  std::cout << "Ready to cleanup..." << std::endl;
 
-  // clean up ReG...
-  Steering_finalize();
-
-  // clean up everything else...
+  // clean up everything...
   thread->Delete();
   sem_destroy(&regDone);
   delete prw;
+  delete pop;
+  delete pip;
+  delete xyz;
+  delete pdr;
   delete td;
 
-  std::cout << "All done, bye...\n";
+  std::cout << "All done, bye..." << std::endl;
   return 0;
-}
-
-void* regLoop(void* userData) {
-  int l = 0;
-  int status;
-  int numParamsChanged;
-  int numRecvdCmds;
-  int recvdCmds[REG_MAX_NUM_STR_CMDS];
-  char** changedParamLabels;
-  char** recvdCmdParams;
-  bool done;
-  bool needRefresh = false;
-
-  int bVis = 1;
-  double isoValue[PVS_MAX_ISOS];
-
-  // thread data...
-  threadData* td = (threadData*) ((ThreadInfoStruct*) userData)->UserData;
-
-  // allocate memory...
-  changedParamLabels = Alloc_string_array(REG_MAX_STRING_LENGTH,
-					  REG_MAX_NUM_STR_PARAMS);
-  recvdCmdParams = Alloc_string_array(REG_MAX_STRING_LENGTH,
-				      REG_MAX_NUM_STR_CMDS);
-
-  // register params...
-  status = Register_param("Bonds visible?", REG_TRUE, (void*) (&bVis),
-			  REG_INT, "0", "1");
-
-  isoValue[0] = ((PlatoIsoPipeline*) td->isoPipeline)->getIsoValue(0);
-  status = Register_param("Iso 0 Value", REG_TRUE, (void*) &isoValue[0],
-			  REG_DBL, "", "");
-
-  loopLock->Lock();
-  done = regLoopDone;
-  loopLock->Unlock();
-
-  // go into loop until told to finish...
-  while(!done) {
-    // sleep for 0.1 seconds...
-    usleep(100000);
-
-    status = Steering_control(l, &numParamsChanged, changedParamLabels,
-			      &numRecvdCmds, recvdCmds, recvdCmdParams);
-
-    if(status != REG_SUCCESS) {
-      std::cerr << "Call to Steering_control failed...\n";
-      continue;
-    }
-
-    // deal with commands from steering library...
-    for(int i = 0; i < numRecvdCmds; i++) {
-      switch(recvdCmds[i]) {
-      case REG_STR_STOP:
-	std::cout << "Try to exit...\n";
-	//td->window->getInteractor()->InvokeEvent(vtkCommand::ExitEvent);
-	td->window->exit();
-	break;
-      }
-    }
-
-    // deal with changed parameters...
-    for(int i = 0; i < numParamsChanged; i++) {
-      if(!strcmp(changedParamLabels[i], "Bonds visible?")) {
-	std::cout << "Bonds Changed...\n";
-	if(bVis)
-	  ((PlatoXYZPipeline*) td->xyzPipeline)->setBondsVisible(true);
-	else
-	  ((PlatoXYZPipeline*) td->xyzPipeline)->setBondsVisible(false);
-	needRefresh = true;
-	continue;
-      }
-
-      if(!strncmp(changedParamLabels[i], "Iso", 3)) {
-	std::cout << "Iso value changed...\n";
-	((PlatoIsoPipeline*) td->isoPipeline)->setIsoValue(0, isoValue[0]);
-	needRefresh = true;
-	continue;
-      }
-    }
-
-    // tell the interactor to render if needs be...
-    if(needRefresh) {
-      renderLock->Lock();
-      reRender = true;
-      renderLock->Unlock();
-      needRefresh = false;
-    }
-
-    // see if we're done yet...
-    loopLock->Lock();
-    done = regLoopDone;
-    loopLock->Unlock();
-
-    // update loop count for steering library...
-    l++;
-  }
-
-  std::cout << "Loop done...\n";
-  sem_post(&regDone);
 }
 
 void renderCallback(vtkObject* obj, unsigned long eid, void* cd, void* calld) {
@@ -250,21 +154,28 @@ void renderCallback(vtkObject* obj, unsigned long eid, void* cd, void* calld) {
   ((vtkRenderWindowInteractor*) obj)->CreateTimer(VTKI_TIMER_UPDATE);
 }
 
-void parseOptions(int argc, char** argv) {
-  bool rhoFile = false;
-  bool xyzFile = false;
+void parseOptions(int argc, char* argv[], optionsData* options) {
 
   for(int i = 1; i < argc; i++) {
 
-    if(!strcmp("-h", argv[i]) || !strcmp("-help", argv[i])) {
+    if(!strcmp("-c", argv[i]) || !strcmp("--cut", argv[i])) {
+      options->useCutplane = true;
+      continue;
+    }
+
+    if(!strcmp("-h", argv[i]) || !strcmp("--help", argv[i])) {
       usage();
       exit(0);
     }
 
+    if(!strcmp("-o", argv[i]) || !strcmp("--ortho", argv[i])) {
+      options->useOrthoslice = true;
+      continue;
+    }
+
     if(!strcmp("-r", argv[i]) || !strcmp("--rho", argv[i])) {
-      rhoFile = true;
       i++;
-      rhoFilename = argv[i];
+      options->rhoFilename = argv[i];
       continue;
     }
 
@@ -278,15 +189,14 @@ void parseOptions(int argc, char** argv) {
     }
 
     if(!strcmp("-x", argv[i]) || !strcmp("--xyz", argv[i])) {
-      xyzFile = true;
       i++;
-      xyzFilename = argv[i];
+      options->xyzFilename = argv[i];
       continue;
     }
   }
 
   // check that all required options are present...
-  if(!(rhoFile || xyzFile)) {
+  if(!(options->rhoFilename || options->xyzFilename)) {
     usage();
     exit(1);
   }
@@ -294,7 +204,9 @@ void parseOptions(int argc, char** argv) {
 
 void usage() {
   std::cout << "Usage: " << PVS_BIN_NAME << "  [options]\nOptions:\n";
+  std::cout << "  -c, --cut\t\tEnable a cut plane through the data.\n";
   std::cout << "  -h, --help\t\tPrint this message and exit.\n";
+  std::cout << "  -o, --ortho\t\tEnable an orthoslice through the data.\n";
   std::cout << "  -r, --rho\t\tInput rho file for viewing.\n";
   std::cout << "  -x, --xyz\t\tInput xyz file for viewing.\n";
   std::cout << "  -v, --version\t\tPrint the version number and exit.\n\n";

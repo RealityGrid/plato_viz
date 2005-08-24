@@ -33,13 +33,32 @@
 #ifndef __PLATOMAIN_H__
 
 // macro definitions...
-#define PVS_VERSION "0.01 pre"
-#define PVS_MAX_ISOS 4
+#define PVS_VERSION "0.05 pre"
+#define PVS_MAX_ISOS 2
+
+#ifndef PVS_BIN_NAME
+#define PVS_BIN_NAME "pvs"
+#endif
+
+// system includes...
+#include <semaphore.h>
+
+// vtk forward references...
+class vtkObject;
+class vtkMutexLock;
 
 // Plato forward references...
 class PlatoDataReader;
 class PlatoRenderWindow;
 class PlatoVTKPipeline;
+
+// struct for the results of parseOptions...
+struct optionsData {
+  char* rhoFilename;
+  char* xyzFilename;
+  bool useCutplane;
+  bool useOrthoslice;
+};
 
 // struct to pass data to the thread...
 struct threadData {
@@ -47,12 +66,19 @@ struct threadData {
   PlatoDataReader* dataReader;
   PlatoVTKPipeline* xyzPipeline;
   PlatoVTKPipeline* isoPipeline;
+  PlatoVTKPipeline* orthoPipeline;
 };
 
+// global variables...
+extern volatile bool reRender;
+extern volatile bool regLoopDone;
+extern vtkMutexLock* renderLock;
+extern vtkMutexLock* loopLock;
+extern sem_t regDone;
+
 // prototypes...
-void parseOptions(int, char**);
+void parseOptions(int, char*[], optionsData*);
 void renderCallback(vtkObject*, unsigned long, void*, void*);
-void* regLoop(void*);
 void usage();
 
 #define __PLATOMAIN_H__
