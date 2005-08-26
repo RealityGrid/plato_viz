@@ -33,8 +33,8 @@
 #ifndef __PLATOMAIN_H__
 
 // macro definitions...
-#define PVS_VERSION "0.05 pre"
-#define PVS_MAX_ISOS 2
+#define PVS_VERSION "0.1 pre"
+#define PVS_MAX_ISOS 4
 
 #ifndef PVS_BIN_NAME
 #define PVS_BIN_NAME "pvs"
