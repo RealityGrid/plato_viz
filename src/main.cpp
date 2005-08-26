@@ -156,44 +156,74 @@ void renderCallback(vtkObject* obj, unsigned long eid, void* cd, void* calld) {
 
 void parseOptions(int argc, char* argv[], optionsData* options) {
 
-  for(int i = 1; i < argc; i++) {
+  // not enough arguments, error...
+  if(argc < 2) {
+    usage();
+    exit(1);
+  }
 
-    if(!strcmp("-c", argv[i]) || !strcmp("--cut", argv[i])) {
-      options->useCutplane = true;
-      continue;
-    }
+  bool showHelp = false;
+  bool showVersion = false;
 
-    if(!strcmp("-h", argv[i]) || !strcmp("--help", argv[i])) {
-      usage();
-      exit(0);
-    }
+  char* argStr;
+  char* nextArgStr;
+  char shortOpt;
+  bool shortOptDone;
+  int shortOptStrLen;
+  int isLongOpt;
 
-    if(!strcmp("-o", argv[i]) || !strcmp("--ortho", argv[i])) {
-      options->useOrthoslice = true;
-      continue;
-    }
+  for(int argNum = 1; argNum < argc; argNum++) {
 
-    if(!strcmp("-r", argv[i]) || !strcmp("--rho", argv[i])) {
-      i++;
-      options->rhoFilename = argv[i];
-      continue;
-    }
+    argStr = argv[argNum];
+    shortOptStrLen = strlen(argStr);
+    if(shortOptStrLen > 1 && argStr[0] == '-') {
+      // process short opts...
+      for(int j = 1; j < shortOptStrLen; j++) {
+	shortOpt = ((argStr[1] == '-') ? '\0' : argStr[j]);
+	shortOptDone = (argStr[j+1] == '\0');
+	nextArgStr = (((argNum + 1) < argc) ? argv[argNum + 1] : NULL);
 
-    if(!strcmp("-v", argv[i]) || !strcmp("--version", argv[i])) {
-      std::cout << "Plato Visualisation System (" << PVS_BIN_NAME;
-      std::cout << ") " << PVS_VERSION << std::endl;
-      std::cout << "Robert Haines for RealityGrid.\n";
-      std::cout << "Copyright (C) 2005  University of Manchester, ";
-      std::cout << "United Kingdom.\nAll rights reserved.\n";
-      exit(0);
-    }
+	if(shortOpt == 'c' || (isLongOpt = strcmp("--cut", argv[argNum])) == 0)
+	  options->useCutplane = true;
+	else if(shortOpt == 'h' || (isLongOpt = strcmp("--help", argv[argNum])) == 0)
+	  showHelp = true;
+	else if(shortOpt == 'o' || (isLongOpt = strcmp("--ortho", argv[argNum])) == 0)
+	  options->useOrthoslice = true;
+	else if((shortOpt == 'r' && shortOptDone) || (isLongOpt = strcmp("--rho", argv[argNum])) == 0) {
+	  if(nextArgStr) {
+	    options->rhoFilename = nextArgStr;
+	    argNum++;
+	    break;
+	  }
+	}
+	else if(shortOpt == 'v' || (isLongOpt = strcmp("--version", argv[argNum])) == 0)
+	  showVersion = true;
+	else if((shortOpt == 'x' && shortOptDone) || (isLongOpt = strcmp("--xyz", argv[argNum])) == 0) {
+	  if(nextArgStr) {
+	    options->xyzFilename = nextArgStr;
+	    argNum++;
+	    break;
+	  }
+	}
 
-    if(!strcmp("-x", argv[i]) || !strcmp("--xyz", argv[i])) {
-      i++;
-      options->xyzFilename = argv[i];
-      continue;
+	if(isLongOpt == 0)
+	  break;
+      }
     }
   }
+
+  // show version and/or help if needed and exit...
+  if(showVersion) {
+    std::cout << "Plato Visualisation System (" << PVS_BIN_NAME;
+    std::cout << ") " << PVS_VERSION << std::endl;
+    std::cout << "Robert Haines for RealityGrid.\n";
+    std::cout << "Copyright (C) 2005  University of Manchester, ";
+    std::cout << "United Kingdom.\nAll rights reserved.\n";    
+  }
+  if(showHelp)
+    usage();
+  if(showVersion || showHelp)
+    exit(0);
 
   // check that all required options are present...
   if(!(options->rhoFilename || options->xyzFilename)) {
@@ -203,12 +233,14 @@ void parseOptions(int argc, char* argv[], optionsData* options) {
 }
 
 void usage() {
-  std::cout << "Usage: " << PVS_BIN_NAME << "  [options]\nOptions:\n";
-  std::cout << "  -c, --cut\t\tEnable a cut plane through the data.\n";
-  std::cout << "  -h, --help\t\tPrint this message and exit.\n";
-  std::cout << "  -o, --ortho\t\tEnable an orthoslice through the data.\n";
-  std::cout << "  -r, --rho\t\tInput rho file for viewing.\n";
-  std::cout << "  -x, --xyz\t\tInput xyz file for viewing.\n";
-  std::cout << "  -v, --version\t\tPrint the version number and exit.\n\n";
-  std::cout << "Report bugs to <www.kato.mvc.mcc.ac.uk/bugzilla>\n";
+  using std::cout;
+
+  cout << "Usage: " << PVS_BIN_NAME << " [options]\nOptions:\n";
+  cout << "  -c, --cut\t\t\tEnable a cut plane through the data.\n";
+  cout << "  -h, --help\t\t\tPrint this message and exit.\n";
+  cout << "  -o, --ortho\t\t\tEnable an orthoslice through the data.\n";
+  cout << "  -r RHOFILE, --rho RHOFILE\tInput rho file for viewing.\n";
+  cout << "  -v, --version\t\t\tPrint the version number and exit.\n";
+  cout << "  -x XYZFILE, --xyz XYZFILE\tInput xyz file for viewing.\n";
+  cout << "\nReport bugs to <www.kato.mvc.mcc.ac.uk/bugzilla>\n";
 }
