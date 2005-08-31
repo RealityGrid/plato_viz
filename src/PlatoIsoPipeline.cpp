@@ -148,9 +148,6 @@ void PlatoIsoPipeline::buildPipeline() {
   // put it all into an actor and apply properties...
   isoActor->SetMapper(isoMapper);
   isoActor->SetProperty(actorProperties);
-
-  // make a surface visible...
-  setIsoVisible(0, true);
 }
 
 void PlatoIsoPipeline::setIsoValue(int iso, double value) {
