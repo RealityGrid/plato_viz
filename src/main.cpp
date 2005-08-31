@@ -61,30 +61,28 @@ vtkMutexLock* loopLock;
 sem_t regDone;
 
 int main(int argc, char** argv) {
-  optionsData options;
-  options.rhoFilename = NULL;
-  options.xyzFilename = NULL;
-  options.useCutplane = false;
-  options.useOrthoslice = false;
+  OptionsData* options = new OptionsData();
 
-  parseOptions(argc, argv, &options);
+  parseOptions(argc, argv, options);
 
   PlatoRenderWindow* prw = new PlatoRenderWindow("Plato Visualization System (pvs)");
-  PlatoXYZPipeline* xyz;
-  if(options.xyzFilename) {
-    xyz = new PlatoXYZPipeline(options.xyzFilename);
+  PlatoXYZPipeline* xyz = NULL;
+  if(options->xyzFilename) {
+    xyz = new PlatoXYZPipeline(options->xyzFilename);
     prw->addPipeline(xyz);
   }
 
   PlatoDataReader* pdr;
   PlatoIsoPipeline* pip;
   PlatoOrthoPipeline* pop;
-  if(options.rhoFilename) {
-    pdr = new PlatoDataReader(options.rhoFilename);
+  if(options->rhoFilename) {
+    pdr = new PlatoDataReader(options->rhoFilename);
     pip = new PlatoIsoPipeline(pdr);
-    pip->setIsoCutter(options.useCutplane);
+    for(int i = 0; i < options->numIsos; i++)
+      pip->setIsoVisible(i, true);
+    pip->setIsoCutter(options->useCutplane);
     pop = new PlatoOrthoPipeline(pdr);
-    pop->setOrthoslice(options.useOrthoslice);
+    pop->setOrthoslice(options->useOrthoslice);
     prw->addPipeline(pip);
     prw->addPipeline(pop);
   }
@@ -126,6 +124,7 @@ int main(int argc, char** argv) {
   delete xyz;
   delete pdr;
   delete td;
+  delete options;
 
   std::cout << "All done, bye..." << std::endl;
   return 0;
@@ -154,13 +153,17 @@ void renderCallback(vtkObject* obj, unsigned long eid, void* cd, void* calld) {
   ((vtkRenderWindowInteractor*) obj)->CreateTimer(VTKI_TIMER_UPDATE);
 }
 
-void parseOptions(int argc, char* argv[], optionsData* options) {
+void parseOptions(int argc, char* argv[], OptionsData* options) {
 
-  // not enough arguments, error...
+  // not enough arguments? error...
   if(argc < 2) {
     usage();
     exit(1);
   }
+
+  using std::cout;
+  using std::cerr;
+  using std::endl;
 
   bool showHelp = false;
   bool showVersion = false;
@@ -177,7 +180,6 @@ void parseOptions(int argc, char* argv[], optionsData* options) {
     argStr = argv[argNum];
     shortOptStrLen = strlen(argStr);
     if(shortOptStrLen > 1 && argStr[0] == '-') {
-      // process short opts...
       for(int j = 1; j < shortOptStrLen; j++) {
 	shortOpt = ((argStr[1] == '-') ? '\0' : argStr[j]);
 	shortOptDone = (argStr[j+1] == '\0');
@@ -187,6 +189,20 @@ void parseOptions(int argc, char* argv[], optionsData* options) {
 	  options->useCutplane = true;
 	else if(shortOpt == 'h' || (isLongOpt = strcmp("--help", argv[argNum])) == 0)
 	  showHelp = true;
+	else if(shortOpt == 'i' || (isLongOpt = strcmp("--isosurfaces", argv[argNum])) == 0) {
+	  if(nextArgStr) {
+	    options->numIsos = atoi(nextArgStr);
+	    if(options->numIsos > PVS_MAX_ISOS)
+	      options->numIsos = PVS_MAX_ISOS;
+	    argNum++;
+	    break;
+	  }
+	  else {
+	    cerr << "Number of initial isosurfaces not specified.\n\n";
+	    usage();
+	    exit(1);
+	  }
+	}
 	else if(shortOpt == 'o' || (isLongOpt = strcmp("--ortho", argv[argNum])) == 0)
 	  options->useOrthoslice = true;
 	else if((shortOpt == 'r' && shortOptDone) || (isLongOpt = strcmp("--rho", argv[argNum])) == 0) {
@@ -195,8 +211,15 @@ void parseOptions(int argc, char* argv[], optionsData* options) {
 	    argNum++;
 	    break;
 	  }
+	  else {
+	    cerr << "No filename supplied for RHOFILE.\n\n";
+	    usage();
+	    exit(1);
+	  }
 	}
-	else if(shortOpt == 'v' || (isLongOpt = strcmp("--version", argv[argNum])) == 0)
+	else if(shortOpt =='v' || (isLongOpt = strcmp("--view-only", argv[argNum])) == 0 || (isLongOpt = strcmp("--no-steering", argv[argNum])) == 0)
+	  options->useSteering = false;
+	else if((isLongOpt = strcmp("--version", argv[argNum])) == 0)
 	  showVersion = true;
 	else if((shortOpt == 'x' && shortOptDone) || (isLongOpt = strcmp("--xyz", argv[argNum])) == 0) {
 	  if(nextArgStr) {
@@ -204,8 +227,19 @@ void parseOptions(int argc, char* argv[], optionsData* options) {
 	    argNum++;
 	    break;
 	  }
+	  else {
+	    cerr << "No filename supplied for XYZFILE.\n\n";
+	    usage();
+	    exit(1);
+	  }
+	}
+	else {
+	  cerr << "Unknown option " << argStr << endl << endl;
+	  usage();
+	  exit(1);
 	}
 
+	// if we've just parsed a long option, kill the inner loop...
 	if(isLongOpt == 0)
 	  break;
       }
@@ -214,11 +248,11 @@ void parseOptions(int argc, char* argv[], optionsData* options) {
 
   // show version and/or help if needed and exit...
   if(showVersion) {
-    std::cout << "Plato Visualisation System (" << PVS_BIN_NAME;
-    std::cout << ") " << PVS_VERSION << std::endl;
-    std::cout << "Robert Haines for RealityGrid.\n";
-    std::cout << "Copyright (C) 2005  University of Manchester, ";
-    std::cout << "United Kingdom.\nAll rights reserved.\n";    
+    cout << "Plato Visualisation System (" << PVS_BIN_NAME;
+    cout << ") " << PVS_VERSION << endl;
+    cout << "Robert Haines for RealityGrid.\n";
+    cout << "Copyright (C) 2005  University of Manchester, ";
+    cout << "United Kingdom.\nAll rights reserved.\n";    
   }
   if(showHelp)
     usage();
@@ -226,7 +260,13 @@ void parseOptions(int argc, char* argv[], optionsData* options) {
     exit(0);
 
   // check that all required options are present...
-  if(!(options->rhoFilename || options->xyzFilename)) {
+  if(!options->rhoFilename) {
+    usage();
+    exit(1);
+  }
+
+  if(!options->useOrthoslice && (options->numIsos < 1)) {
+    cerr << "You must specify at least one isosurface or an orthoslice.\n\n";
     usage();
     exit(1);
   }
@@ -236,11 +276,16 @@ void usage() {
   using std::cout;
 
   cout << "Usage: " << PVS_BIN_NAME << " [options]\nOptions:\n";
-  cout << "  -c, --cut\t\t\tEnable a cut plane through the data.\n";
-  cout << "  -h, --help\t\t\tPrint this message and exit.\n";
-  cout << "  -o, --ortho\t\t\tEnable an orthoslice through the data.\n";
-  cout << "  -r RHOFILE, --rho RHOFILE\tInput rho file for viewing.\n";
-  cout << "  -v, --version\t\t\tPrint the version number and exit.\n";
-  cout << "  -x XYZFILE, --xyz XYZFILE\tInput xyz file for viewing.\n";
+  cout << "  -c, --cut\t\tEnable a cut plane through the data.\n";
+  cout << "  -h, --help\t\tPrint this message and exit.\n";
+  cout << "  -i N, --isosurfaces N\n\t\t\tThe number of visible isosurfaces";
+  cout << " on startup.\n";
+  cout << "  -o, --ortho\t\tEnable an orthoslice through the data.\n";
+  cout << "  -r RHOFILE, --rho RHOFILE\n\t\t\tInput rho file for viewing.\n";
+  cout << "  -R, --reg-io\t\tGet data from a RealityGrid socket.\n";
+  cout << "  -v, --view-only, --no-steering\n\t\t\tUse " << PVS_BIN_NAME;
+  cout << " as a viewer only - no interface control.\n";
+  cout << "      --version\t\tPrint the version number and exit.\n";
+  cout << "  -x XYZFILE, --xyz XYZFILE\n\t\t\tInput xyz file for viewing.\n";
   cout << "\nReport bugs to <www.kato.mvc.mcc.ac.uk/bugzilla>\n";
 }
