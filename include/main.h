@@ -52,12 +52,28 @@ class PlatoDataReader;
 class PlatoRenderWindow;
 class PlatoVTKPipeline;
 
-// struct for the results of parseOptions...
-struct optionsData {
+// class for the results of parseOptions...
+class OptionsData {
+ public:
   char* rhoFilename;
   char* xyzFilename;
+  int numIsos;
   bool useCutplane;
   bool useOrthoslice;
+  bool useReGIO;
+  bool useSteering;
+
+ public:
+  OptionsData() {
+    // these are the options defaults...
+    rhoFilename = NULL;
+    xyzFilename = NULL;
+    numIsos = 1;
+    useCutplane = false;
+    useOrthoslice = false;
+    useReGIO = false;
+    useSteering = true;
+  }
 };
 
 // struct to pass data to the thread...
@@ -77,7 +93,7 @@ extern vtkMutexLock* loopLock;
 extern sem_t regDone;
 
 // prototypes...
-void parseOptions(int, char*[], optionsData*);
+void parseOptions(int, char*[], OptionsData*);
 void renderCallback(vtkObject*, unsigned long, void*, void*);
 void usage();
 
