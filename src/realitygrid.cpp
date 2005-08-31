@@ -71,8 +71,8 @@ void* regLoop(void* userData) {
   bool needRefresh = false;
 
   // params to be registered...
-  int mVis = 1;
-  int bVis = 1;
+  int mVis;
+  int bVis;
   double isoValue[PVS_MAX_ISOS];
   int isoVis[PVS_MAX_ISOS];
   int orthoslice;
@@ -91,10 +91,14 @@ void* regLoop(void* userData) {
   regInit();
 
   // register params...
-  status = Register_param("Molecule visible?", REG_TRUE, (void*) &mVis,
-			  REG_INT, "0", "1");
-  status = Register_param("Bonds visible?", REG_TRUE, (void*) &bVis,
-			  REG_INT, "0", "1");
+  if(td->xyzPipeline) {
+    ((PlatoXYZPipeline*) td->xyzPipeline)->isMoleculeVisible() ? mVis = 1 : mVis = 0;
+    status = Register_param("Molecule visible?", REG_TRUE, (void*) &mVis,
+			    REG_INT, "0", "1");
+    ((PlatoXYZPipeline*) td->xyzPipeline)->isBondsVisible() ? bVis = 1 : bVis = 0;
+    status = Register_param("Bonds visible?", REG_TRUE, (void*) &bVis,
+			    REG_INT, "0", "1");
+  }
 
   double* isoRange = ((PlatoDataReader*) td->dataReader)->getDataRange();
   char isoMin[10];
