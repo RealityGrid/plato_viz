@@ -31,6 +31,7 @@
 ---------------------------------------------------------------------------*/
 
 // system includes...
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <semaphore.h>
@@ -65,7 +66,9 @@ int main(int argc, char** argv) {
 
   parseOptions(argc, argv, options);
 
-  PlatoRenderWindow* prw = new PlatoRenderWindow("Plato Visualization System (pvs)");
+  char windowTitle[100];
+  sprintf(windowTitle, "Plato Visualization System (%s)", PVS_BIN_NAME);
+  PlatoRenderWindow* prw = new PlatoRenderWindow(windowTitle);
   PlatoXYZPipeline* xyz = NULL;
   if(options->xyzFilename) {
     xyz = new PlatoXYZPipeline(options->xyzFilename);
