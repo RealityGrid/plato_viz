@@ -52,6 +52,8 @@ class PlatoRenderWindow {
   int windowWidth;
   int windowHeight;
 
+  bool steered;
+
   vtkCallbackCommand* callback;
   vtkRenderer* renderer;
   vtkRenderWindow* window;
@@ -59,7 +61,7 @@ class PlatoRenderWindow {
   vtkInteractorStyleTrackballCamera* interactorStyle;
 
  public:
-  PlatoRenderWindow(const char*, int = 500, int = 500);
+  PlatoRenderWindow(bool, const char*, int = 500, int = 500);
   ~PlatoRenderWindow();
   void addActor(vtkActor*);
   void addActors(vtkActorCollection*);
@@ -70,6 +72,7 @@ class PlatoRenderWindow {
   vtkRenderWindowInteractor* getInteractor();
   void start();
   void exit();
+  bool isSteered();
 };
 
 #define __PLATORENDERWINDOW_H__

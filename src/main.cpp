@@ -62,13 +62,18 @@ vtkMutexLock* loopLock;
 sem_t regDone;
 
 int main(int argc, char** argv) {
-  OptionsData* options = new OptionsData();
+  vtkMultiThreader* thread;
+  threadData* td;
 
+  // parse options...
+  OptionsData* options = new OptionsData();
   parseOptions(argc, argv, options);
 
+  // create vtk window...
   char windowTitle[100];
   sprintf(windowTitle, "Plato Visualization System (%s)", PVS_BIN_NAME);
-  PlatoRenderWindow* prw = new PlatoRenderWindow(windowTitle);
+  PlatoRenderWindow* prw = new PlatoRenderWindow(options->useSteering, windowTitle);
+
   PlatoXYZPipeline* xyz = NULL;
   if(options->xyzFilename) {
     xyz = new PlatoXYZPipeline(options->xyzFilename);
@@ -90,43 +95,53 @@ int main(int argc, char** argv) {
     prw->addPipeline(pop);
   }
 
-  // initialise thread stuff...
-  renderLock = vtkMutexLock::New();
-  loopLock = vtkMutexLock::New();
-  sem_init(&regDone, 0, 0);
-  vtkMultiThreader* thread = vtkMultiThreader::New();
+  // if we're not using realitygrid stuff we can ignore all this...
+  if(options->useSteering) {
+    // initialise thread stuff...
+    renderLock = vtkMutexLock::New();
+    loopLock = vtkMutexLock::New();
+    sem_init(&regDone, 0, 0);
+    thread = vtkMultiThreader::New();
 
-  // initialise and start the RealityGrid loop...
-  threadData* td = new threadData;
-  td->window = prw;
-  td->dataReader = pdr;
-  td->xyzPipeline = xyz;
-  td->isoPipeline = pip;
-  td->orthoPipeline = pop;
-  thread->SpawnThread(regLoop, td);
+    // initialise and start the RealityGrid loop...
+    td = new threadData;
+    td->window = prw;
+    td->dataReader = pdr;
+    td->xyzPipeline = xyz;
+    td->isoPipeline = pip;
+    td->orthoPipeline = pop;
+    thread->SpawnThread(regLoop, td);
+  }
 
   // start the vtk interactor (this blocks the main thread)...
   prw->start();
   
-  // the interactor is finished so tell the loop to finish...
-  loopLock->Lock();
-  regLoopDone = true;
-  loopLock->Unlock();
-  
-  // wait for it to finish...
-  sem_wait(&regDone);
+  if(options->useSteering) {
+    // the interactor is finished so tell the loop to finish...
+    loopLock->Lock();
+    regLoopDone = true;
+    loopLock->Unlock();
+
+    // wait for it to finish...
+    sem_wait(&regDone);
+  }
 
   std::cout << "Ready to cleanup..." << std::endl;
 
   // clean up everything...
-  thread->Delete();
-  sem_destroy(&regDone);
+  if(options->useSteering) {
+    thread->Delete();
+    sem_destroy(&regDone);
+    renderLock->Delete();
+    loopLock->Delete();
+    delete td;
+  }
+
   delete prw;
   delete pop;
   delete pip;
   delete xyz;
   delete pdr;
-  delete td;
   delete options;
 
   std::cout << "All done, bye..." << std::endl;
@@ -220,9 +235,11 @@ void parseOptions(int argc, char* argv[], OptionsData* options) {
 	    exit(1);
 	  }
 	}
-	else if(shortOpt =='v' || (isLongOpt = strcmp("--view-only", argv[argNum])) == 0 || (isLongOpt = strcmp("--no-steering", argv[argNum])) == 0)
+	else if(shortOpt == 'R' || (isLongOpt = strcmp("--reg-io", argv[argNum])) == 0)
+	  options->useReGIO = true;
+	else if((isLongOpt = strcmp("--view-only", argv[argNum])) == 0 || (isLongOpt = strcmp("--no-steering", argv[argNum])) == 0)
 	  options->useSteering = false;
-	else if((isLongOpt = strcmp("--version", argv[argNum])) == 0)
+	else if(shortOpt == 'v' || (isLongOpt = strcmp("--version", argv[argNum])) == 0)
 	  showVersion = true;
 	else if((shortOpt == 'x' && shortOptDone) || (isLongOpt = strcmp("--xyz", argv[argNum])) == 0) {
 	  if(nextArgStr) {
@@ -286,9 +303,9 @@ void usage() {
   cout << "  -o, --ortho\t\tEnable an orthoslice through the data.\n";
   cout << "  -r RHOFILE, --rho RHOFILE\n\t\t\tInput rho file for viewing.\n";
   cout << "  -R, --reg-io\t\tGet data from a RealityGrid socket.\n";
-  cout << "  -v, --view-only, --no-steering\n\t\t\tUse " << PVS_BIN_NAME;
+  cout << "  -v, --version\t\tPrint the version number and exit.\n";
+  cout << "      --view-only, --no-steering\n\t\t\tUse " << PVS_BIN_NAME;
   cout << " as a viewer only - no interface control.\n";
-  cout << "      --version\t\tPrint the version number and exit.\n";
   cout << "  -x XYZFILE, --xyz XYZFILE\n\t\t\tInput xyz file for viewing.\n";
   cout << "\nReport bugs to <www.kato.mvc.mcc.ac.uk/bugzilla>\n";
 }

@@ -47,9 +47,13 @@
 #include "PlatoRenderWindow.h"
 #include "PlatoVTKPipeline.h"
 
-PlatoRenderWindow::PlatoRenderWindow(const char* name, int width, int height) {
-  callback = vtkCallbackCommand::New();
-  callback->SetCallback(renderCallback);
+PlatoRenderWindow::PlatoRenderWindow(bool steer, const char* name, int width, int height) {
+  steered = steer;
+
+  if(steered) {
+    callback = vtkCallbackCommand::New();
+    callback->SetCallback(renderCallback);
+  }
 
   windowName = const_cast<char*>(name);
   windowWidth = width;
@@ -68,12 +72,15 @@ PlatoRenderWindow::PlatoRenderWindow(const char* name, int width, int height) {
   interactor->SetRenderWindow(window);
   interactor->SetInteractorStyle(interactorStyle);
   interactor->Initialize();
-  interactor->AddObserver(vtkCommand::TimerEvent, callback);
-  interactor->CreateTimer(VTKI_TIMER_FIRST);
+  if(steered) {
+    interactor->AddObserver(vtkCommand::TimerEvent, callback);
+    interactor->CreateTimer(VTKI_TIMER_FIRST);
+  }
 }
 
 PlatoRenderWindow::~PlatoRenderWindow() {
-  callback->Delete();
+  if(steered)
+    callback->Delete();
   renderer->Delete();
   window->Delete();
   if(interactor)
@@ -119,4 +126,8 @@ void PlatoRenderWindow::start() {
 
 void PlatoRenderWindow::exit() {
   interactor->ExitCallback();
+}
+
+bool PlatoRenderWindow::isSteered() {
+  return steered;
 }
