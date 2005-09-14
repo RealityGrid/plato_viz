@@ -34,7 +34,7 @@ TARGET=pvs
 
 REG_INCLUDES=-I${REG_STEER_HOME}/include
 
-REG_LINK=-L${REG_STEER_HOME}/lib32 -lReG_Steer -lxml2
+REG_LINK=-L${REG_STEER_HOME}/lib32 -lReG_Steer -lxml2 #-lReG_Steer_Utils
 
 VTK_INCLUDES=-I/opt/software/vtk/VTK -I/opt/software/vtk/VTK/Common -I/opt/software/vtk/VTK/Filtering -I/opt/software/vtk/VTK/Graphics -I/opt/software/vtk/VTK/Hybrid -I/opt/software/vtk/VTK/Imaging -I/opt/software/vtk/VTK/IO -I/opt/software/vtk/VTK/Rendering -I/opt/software/vtk/VTK/Utilities -I/opt/software/vtk/VTK/VolumeRendering -I/opt/software/vtk/VTK/Widgets
 
