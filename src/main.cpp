@@ -126,8 +126,6 @@ int main(int argc, char** argv) {
     sem_wait(&regDone);
   }
 
-  std::cout << "Ready to cleanup..." << std::endl;
-
   // clean up everything...
   if(options->useSteering) {
     thread->Delete();
@@ -138,13 +136,17 @@ int main(int argc, char** argv) {
   }
 
   delete prw;
-  delete pop;
-  delete pip;
-  delete xyz;
-  delete pdr;
+  if(xyz)
+    delete xyz;
+  if(pop)
+    delete pop;
+  if(pip)
+    delete pip;
+  if(pdr)
+    delete pdr;
+
   delete options;
 
-  std::cout << "All done, bye..." << std::endl;
   return 0;
 }
 
@@ -156,8 +158,6 @@ void renderCallback(vtkObject* obj, unsigned long eid, void* cd, void* calld) {
   renderLock->Unlock();
 
   if(render) {
-    std::cout << "Render...\n";
-
     // render via the interactor...
     ((vtkRenderWindowInteractor*) obj)->Render();
 

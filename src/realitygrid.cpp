@@ -148,7 +148,6 @@ void* regLoop(void* userData) {
     for(int i = 0; i < numRecvdCmds; i++) {
       switch(recvdCmds[i]) {
       case REG_STR_STOP:
-	std::cout << "Try to exit...\n";
 	//td->window->getInteractor()->InvokeEvent(vtkCommand::ExitEvent);
 	td->window->exit();
 	break;
@@ -200,8 +199,6 @@ void* regLoop(void* userData) {
     // update loop count for steering library...
     l++;
   }
-
-  std::cout << "Loop done..." << std::endl;
 
   // clean up steering library...
   regFinalise();

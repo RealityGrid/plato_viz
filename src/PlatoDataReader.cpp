@@ -93,7 +93,6 @@ void PlatoDataReader::readRhoFile() {
   // read in the cellVec data...
   for(int i = 0; i < 9; i++) {
     fin >> cellVec[i];
-    std::cout << cellVec[i] << std::endl;
     cellVec[i] *= bohr;
   }
 
@@ -104,10 +103,7 @@ void PlatoDataReader::readRhoFile() {
   fin >> numPoints;
   if(numPoints == 1) {
     uniformMesh = false;
-    std::cout << "Atom-centred mesh...\n";
   }
-  else
-    std::cout << "Uniform mesh...\n";
 
   // read number of points...
   if(uniformMesh) {
@@ -119,7 +115,6 @@ void PlatoDataReader::readRhoFile() {
   else {
     fin >> numPoints;
   }
-  std::cout << "Number of points: " << numPoints << "...\n";
   dataPoints->Allocate(numPoints, 1000);
   dataValues->SetNumberOfComponents(1);
   dataValues->SetNumberOfTuples(numPoints);
